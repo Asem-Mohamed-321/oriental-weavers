@@ -1,0 +1,24 @@
+# Logs
+front-end-design/logs
+front-end-design/*.log
+front-end-design/npm-debug.log*
+front-end-design/yarn-debug.log*
+front-end-design/yarn-error.log*
+front-end-design/pnpm-debug.log*
+front-end-design/lerna-debug.log*
+
+front-end-design/node_modules
+front-end-design/dist
+front-end-design/dist-ssr
+front-end-design/*.local
+
+# Editor directories and files
+front-end-design/.vscode/*
+front-end-design/!.vscode/extensions.json
+front-end-design/.idea
+front-end-design/.DS_Store
+front-end-design/*.suo
+front-end-design/*.ntvs*
+front-end-design/*.njsproj
+front-end-design/*.sln
+front-end-design/*.sw?
