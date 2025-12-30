@@ -22,6 +22,16 @@ const FileUploadCard = ({
     }
   };
 
+  let fileCount = 0;
+  if (selectedFiles) {
+    if (selectedFiles instanceof FileList || Array.isArray(selectedFiles)) {
+      fileCount = selectedFiles.length;
+    } else if (selectedFiles.name) {
+       // Single file object
+       fileCount = 1;
+    }
+  }
+
   // --- Helper: Truncate Function ---
   const formatFileName = (name) => {
     if (name.length > 20) {
@@ -67,16 +77,31 @@ const FileUploadCard = ({
       />
 
       {/* --- NEW: Display File Names Inside the Card --- */}
-      {filesArray.length > 0 && (
+      {/* {filesArray.length > 0 && (
         <div className="mt-2 text-center w-full">
           {filesArray.map((file, index) => (
             <p key={index} className="text-green-600 text-sm font-medium dir-ltr">
-              {/* Checkmark Icon + Truncated Name */}
               ✓ {formatFileName(file.name)}
             </p>
           ))}
         </div>
+      )} */}
+
+      {/* --- SHOW FILE COUNT INSIDE CARD --- */}
+      {fileCount > 0 && (
+        <div className="mt-4 flex items-center gap-2 text-green-700 px-4 py-1.5 animate-in fade-in zoom-in underline">
+           {/* Simple SVG Checkmark */}
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+             <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+           </svg>
+           <span className="text-xs font-bold">
+             {isMultiple 
+               ? `تم اختيار ${fileCount} ملفات` 
+               : `تم اختيار الملف`}
+           </span>
+        </div>
       )}
+      
     </div>
   );
 };

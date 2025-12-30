@@ -13,16 +13,24 @@ const UploadScreen = ({ onStartProcessing }) => {
     console.log("Room Selected:", files[0].name);
   };
 
-  // Handler for Carpets (Multiple Files)
+  // Handler for Carpets (Max 10 Files)
   const handleCarpetSelect = (files) => {
-    setCarpetImages([...files]); // Convert FileList to Array
-    console.log("Carpets Selected:", files.length);
+    // Convert FileList to a proper Array
+    let selected = Array.from(files);
+
+    if (selected.length > 10) {
+      alert("عفواً، يمكنك اختيار 10 صور كحد أقصى.");
+      return;
+    }
+
+    setCarpetImages(selected);
+    console.log("Carpets Selected:", selected.length);
   };
 
   const canProceed = roomImage && carpetImages.length > 0;
 
   return (
-    <div className="min-h-screen bg-white p-6 flex flex-col" dir="rtl">
+    <div className="h-[85dvh] bg-white p-6 flex flex-col" dir="rtl">
       
       {/* Header (Optional) */}
       {/* <div className="mb-8 text-center">
@@ -59,11 +67,11 @@ const UploadScreen = ({ onStartProcessing }) => {
         />
 
         {/* Feedback: Show count of carpets */}
-        {carpetImages.length > 0 && (
+        {/* {carpetImages.length > 0 && (
           <p className="text-green-600 text-sm text-center mb-6 -mt-2">
             تم اختيار {carpetImages.length} سجاد
           </p>
-        )}
+        )} */}
       </div>
 
       {/* Footer Action Button */}

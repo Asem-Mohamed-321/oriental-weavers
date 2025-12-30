@@ -7,8 +7,13 @@ const SplashHeader = ({ isLoading }) => {
     // We do NOT set the logo size here.
     <div 
       className={`
-        flex items-center justify-center transition-all duration-1000 ease-in-out z-50 bg-white
-        ${isLoading ? 'fixed inset-0 h-screen' : 'h-16 sticky top-0 shadow-sm'}
+        flex items-center justify-center z-50 bg-white w-full
+        transition-all duration-1000 ease-in-out
+        sticky top-0
+        ${isLoading 
+          ? 'h-[100dvh]'      // Start: Full Screen (Push content down)
+          : 'h-20 shadow-sm'  // End: Standard Header (Content slides up)
+        }
       `}
     >
       
@@ -21,7 +26,7 @@ const SplashHeader = ({ isLoading }) => {
           /* LOADING STATE: Big Box */
           ${isLoading 
             ? 'w-64 h-64 md:w-96 md:h-96'  /* Mobile: 64x64, Tablet/Desktop: 96x96 */
-            : 'w-32 h-14 md:w-40 md:h-14'  /* Header State: Specific small size */
+            : 'w-40 h-40 md:w-40 md:h-12'  /* Header State: Specific small size */
           }
         `}
       >

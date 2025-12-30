@@ -1,7 +1,7 @@
 import { useState } from 'react';
 // import your images here or use placeholders
 // import step1Image from '../assets/step1.png';
-import pic1 from '../assets/onboarding1-copy.png'
+import pic1 from '../assets/onboarding1-new.png'
 import pic2 from '../assets/onboarding2.png'
 import pic3 from '../assets/onboarding3.png'
 
@@ -39,7 +39,7 @@ const Onboarding = ({ onFinish }) => {
 
   return (
     // 'dir="rtl"' ensures the text and layout flow correctly for Arabic
-    <div className="min-h-screen bg-white flex flex-col p-6" dir="rtl">
+    <div className=" bg-white flex flex-col p-6" dir="rtl">
       
       {/* --- 1. IMAGE AREA --- */}
       <div className="flex-1 flex items-center justify-center mb-8">
@@ -47,7 +47,7 @@ const Onboarding = ({ onFinish }) => {
            <img 
              src={steps[currentIndex].image} 
              alt={steps[currentIndex].title} 
-             className="w-full h-full object-cover transition-opacity duration-500"
+             className="w-full h-full object-cover transition-opacity duration-500 shadow-[0_5px_25px_-5px_rgba(0,0,0,0.3)] rounded-2xl"
            />
       </div>
 
