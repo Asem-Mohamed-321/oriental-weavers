@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Canvas } from "@react-three/fiber"; 
 import { Loader2, RotateCw, Smartphone, Check, Edit3, Lock, ImageIcon, Upload, XCircle, LayoutGrid, Image as ImageIconLucide, Download, PlusSquare } from "lucide-react";
 import io from "socket.io-client";
+import html2canvas from "html2canvas";
 
 import logo from "./assets/logo-big.png"
 
@@ -54,6 +55,11 @@ export default function StoreApp() {
   const pickCanvasRef = useRef();   
   const containerRef = useRef();    
   const carpetImgObjRef = useRef(null); 
+
+  // --- EMAIL STATE ---
+  const [showEmailPopup, setShowEmailPopup] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // =========================================================
   // 1. SOCKET & INITIALIZATION
@@ -423,6 +429,50 @@ const handlePrototypeSelect = async (room) => {
     }, 300);
   };
   
+  const handleCaptureAndSend = async () => {
+    if (!emailInput) return alert("برجاء إدخال بريدك الإلكتروني ");
+    
+    setIsSendingEmail(true);
+
+    try {
+        // 1. Capture the "containerRef" (The div holding Room + Carpet)
+        if (!containerRef.current) return;
+        
+        const canvas = await html2canvas(containerRef.current, {
+            useCORS: true, // Important for loading external images
+            scale: 2,      // Higher quality
+            backgroundColor: null
+        });
+
+        // 2. Convert to Base64
+        const base64Image = canvas.toDataURL("image/png");
+
+        // 3. Send to Backend
+        const response = await fetch("http://localhost:5000/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: emailInput,
+                image: base64Image
+            })
+        });
+
+        if (response.ok) {
+            alert("تم إرسال الصورة إلى بريدك الإلكتروني");
+            setShowEmailPopup(false);
+            setEmailInput("");
+        } else {
+            alert("تعذر إرسال البريد الإلكتروني");
+        }
+
+    } catch (err) {
+        console.error("Email Error:", err);
+        alert("تعذر إرسال البريد الإلكتروني");
+    } finally {
+        setIsSendingEmail(false);
+    }
+  };
+
   const renderControls = () => {
     if (!currentCarpet || !points || points.length < 4) return null;
     const isVisible = showControls || draggingCarpet || rotatingCarpet || resizingCarpet;
@@ -639,7 +689,7 @@ const handlePrototypeSelect = async (room) => {
                           <button onClick={handleResetRoom} className="px-10 py-2.5 bg-slate-900 text-white border-2 border-gray-200 rounded-md text-sm font-bold hover:border-amber-500 hover:text-amber-600 transition-all flex items-center gap-2">
                             جديد
                           </button>
-                          <button className="px-10 py-2.5 bg-slate-900 text-white rounded-md text-sm font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2">
+                          <button onClick={() => setShowEmailPopup(true)} className="px-10 py-2.5 bg-slate-900 text-white rounded-md text-sm font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2">
                             استخراج
                           </button>
                       </div>
@@ -744,6 +794,49 @@ const handlePrototypeSelect = async (room) => {
                   </div>
               </div>
           </div>
+      )}
+
+      {/* === EMAIL POPUP MODAL === */}
+      {showEmailPopup && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-300 text-center relative">
+                
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">شارك تصميمك</h3>
+                <p className="text-slate-500 mb-6">أدخل بريدك الإلكتروني لاستلام الصورة</p>
+
+                <input 
+                    type="email" 
+                    placeholder="example@mail.com" 
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition-all mb-6 text-right"
+                    dir="ltr"
+                />
+
+                <div className="flex gap-3">
+                    <button 
+                        onClick={() => setShowEmailPopup(false)}
+                        className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                        disabled={isSendingEmail}
+                    >
+                        إلغاء
+                    </button>
+                    <button 
+                        onClick={handleCaptureAndSend}
+                        disabled={isSendingEmail}
+                        className="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+                    >
+                        {isSendingEmail ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" /> جاري الإرسال...
+                            </>
+                        ) : (
+                            "إرسال"
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
       )}
     </div>
   );

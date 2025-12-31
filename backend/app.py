@@ -17,6 +17,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation
+from flask_mail import Mail, Message
+from dotenv import load_dotenv
 
 # -------------------------------------------------------------------------
 # 1. SETUP
@@ -24,6 +26,9 @@ from transformers import SegformerImageProcessor, SegformerForSemanticSegmentati
 print(f"\n\n{'='*40}")
 print(f"🛑 SERVER STARTUP | PID: {os.getpid()} | TIME: {time.ctime()}")
 print(f"{'='*40}\n\n")
+
+# Load variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -43,6 +48,26 @@ ROOM_CONFIGS = {
     "room2.webp": [[0.227,0.674],[0.7824,0.6647],[1.0068,0.88],[-0.0016,0.8723]],
     # Add more filenames here if you add more samples to static/prototypes/
 }
+
+# -------------------------------------------------------------------------
+# 1.5 EMAIL CONFIGURATION
+# -------------------------------------------------------------------------
+# You must use a real email here. If using Gmail, you need an "App Password".
+
+
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
+
+# Debugging: Check if it loaded (Optional - remove before deploying)
+if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
+    print("⚠️ WARNING: Email credentials not found. Check your .env file.")
+
+mail = Mail(app)
 
 # -------------------------------------------------------------------------
 # 2. AI MODEL LOADING (With Local Cache)
@@ -347,6 +372,42 @@ def serve_uploads(filename):
 @app.route('/static/prototypes/<filename>')
 def serve_prototypes(filename):
     return send_from_directory(os.path.join(app.root_path, 'static', 'prototypes'), filename)
+
+# -------------------------------------------------------------------------
+# 7. EMAIL ROUTE (ADD THIS AT THE END BEFORE if __name__)
+# -------------------------------------------------------------------------
+@app.route('/send-email', methods=['POST'])
+def send_email_with_image():
+    data = request.json
+    user_email = data.get('email')
+    image_data = data.get('image') # Base64 string
+
+    if not user_email or not image_data:
+        return jsonify({"error": "Missing data"}), 400
+
+    try:
+        # 1. Decode Base64 Image
+        # Remove header "data:image/png;base64," if present
+        if "," in image_data:
+            image_data = image_data.split(",")[1]
+        
+        image_bytes = base64.b64decode(image_data)
+
+        # 2. Create Email
+        msg = Message("النساجون الشرقيون : سجادتك في غرفتك", recipients=[user_email])
+        msg.body = "إليك شكل السجادة في غرفتك ز استمتع !"
+        
+        # 3. Attach Image
+        msg.attach("design.png", "image/png", image_bytes)
+
+        # 4. Send
+        mail.send(msg)
+        print(f"📧 Email sent to {user_email}")
+        return jsonify({"status": "success"})
+
+    except Exception as e:
+        print(f"❌ Email Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     print("🚀 Starting Server...")

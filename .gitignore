@@ -48,3 +48,4 @@ store-display/*.sw?
 #backend
 backend/ai_cache
 backend/static/uploads
+backend/.env
