@@ -1,4 +1,4 @@
-# Logs
+# mobile files
 front-end-design/logs
 front-end-design/*.log
 front-end-design/npm-debug.log*
@@ -6,13 +6,10 @@ front-end-design/yarn-debug.log*
 front-end-design/yarn-error.log*
 front-end-design/pnpm-debug.log*
 front-end-design/lerna-debug.log*
-
 front-end-design/node_modules
 front-end-design/dist
 front-end-design/dist-ssr
 front-end-design/*.local
-
-# Editor directories and files
 front-end-design/.vscode/*
 front-end-design/!.vscode/extensions.json
 front-end-design/.idea
@@ -22,3 +19,32 @@ front-end-design/*.ntvs*
 front-end-design/*.njsproj
 front-end-design/*.sln
 front-end-design/*.sw?
+
+
+
+
+# screen files
+store-display/logs
+store-display/*.log
+store-display/npm-debug.log*
+store-display/yarn-debug.log*
+store-display/yarn-error.log*
+store-display/pnpm-debug.log*
+store-display/lerna-debug.log*
+store-display/node_modules
+store-display/dist
+store-display/dist-ssr
+store-display/*.local
+store-display/.vscode/*
+store-display/!.vscode/extensions.json
+store-display/.idea
+store-display/.DS_Store
+store-display/*.suo
+store-display/*.ntvs*
+store-display/*.njsproj
+store-display/*.sln
+store-display/*.sw?
+
+#backend
+backend/ai_cache
+backend/static/uploads
