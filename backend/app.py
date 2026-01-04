@@ -19,6 +19,7 @@ import torch.nn.functional as F
 from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
+from datetime import datetime
 
 # -------------------------------------------------------------------------
 # 1. SETUP
@@ -243,7 +244,20 @@ def upload_file_generic():
     if 'file' not in request.files: return jsonify({'error': 'No file'}), 400
     
     file = request.files['file']
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
+    
+    # --- FIX: READABLE DATE FILENAME ---
+    # Get current date as "Day-Month-Year" (e.g., "04-01-2026")
+    date_str = datetime.now().strftime("%d-%m-%Y")
+    
+    # Generate short random ID
+    unique_id = uuid.uuid4().hex[:6]
+    
+    # Clean up original filename (remove spaces)
+    safe_filename = file.filename.replace(" ", "_")
+    
+    # Final Result: "04-01-2026_a1b2c3_living_room.jpg"
+    filename = f"{date_str}_{unique_id}_{safe_filename}"
+    
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     
     is_room = request.form.get('isRoom') == 'true'
@@ -288,6 +302,7 @@ def get_prototypes():
 
     files = os.listdir(proto_dir)
     rooms = []
+    ip = get_ip_address()
     
     # Pair images with their masks
     for f in files:
@@ -297,13 +312,15 @@ def get_prototypes():
             
             # Check if mask exists
             if mask_name in files:
-                ip = get_ip_address()
+                corners = ROOM_CONFIGS.get(f, None)
+
                 rooms.append({
                     "id": base_name,
+                    # DIRECT URL: Point directly to static/prototypes, no copying
                     "image": f"http://{ip}:5000/static/prototypes/{f}",
                     "mask": f"http://{ip}:5000/static/prototypes/{mask_name}",
                     "filename": f,
-                    "mask_filename": mask_name
+                    "corners": corners
                 })
     return jsonify(rooms)
 
@@ -312,58 +329,42 @@ def select_prototype():
     data = request.json
     filename = data.get('filename')
     mask_filename = data.get('mask_filename')
-    target_screen_id = data.get('screenId') # IMPORTANT: Which screen to update?
+    target_screen_id = data.get('screenId')
 
-    if not filename or not mask_filename or not target_screen_id:
+    if not filename or not target_screen_id:
         return jsonify({"error": "Missing data"}), 400
 
-    # Paths
-    proto_dir = os.path.join(app.root_path, 'static', 'prototypes')
-    upload_dir = app.config['UPLOAD_FOLDER']
-    
-    # 1. Copy Room Image -> 'current_room.jpg'
-    room_dest = f"proto_{uuid.uuid4().hex[:6]}.jpg"
-    shutil.copy(
-        os.path.join(proto_dir, filename), 
-        os.path.join(upload_dir, room_dest)
-    )
-    
-    # 2. Copy Mask Image -> 'current_mask.png'
-    mask_dest = f"mask_{uuid.uuid4().hex[:6]}.png"
-    shutil.copy(
-        os.path.join(proto_dir, mask_filename), 
-        os.path.join(upload_dir, mask_dest)
-    )
-    
-    # 3. Prepare URLs
-    timestamp = int(time.time())
     ip = get_ip_address()
-    room_url = f"http://{ip}:5000/static/uploads/{room_dest}?t={timestamp}"
-    mask_url = f"http://{ip}:5000/static/uploads/{mask_dest}?t={timestamp}"
     
-    print(f"✅ Prototype Selected: {filename} -> {target_screen_id}")
+    # --- FIX: DO NOT COPY FILES ---
+    # Instead of shutil.copy(), we just point to the 'static/prototypes' folder.
     
-    # 4. Get Pre-defined Corners
+    timestamp = int(time.time()) # Used only to refresh browser cache, creates no files.
+    
+    # Point directly to the source
+    room_url = f"http://{ip}:5000/static/prototypes/{filename}?t={timestamp}"
+    
+    # Point directly to the source mask (if it exists)
+    mask_url = None
+    if mask_filename:
+        mask_url = f"http://{ip}:5000/static/prototypes/{mask_filename}?t={timestamp}"
+    
+    print(f"✅ Prototype Selected (No File Created): {filename}")
+    
+    # Get Corners
     default_corners = ROOM_CONFIGS.get(filename, None)
 
-    # 5. Tell Screen: "Room is ready (with corners!)"
+    # Tell the Screen to load these URLs
     socketio.emit('room_uploaded', {
         'imageUrl': room_url,
         'corners': default_corners
     }, to=target_screen_id)
     
-    # 6. Tell Screen: "Mask is ready"
-    # Wait a tiny bit to ensure the frontend has loaded the room image first
-    def send_mask_later():
-        time.sleep(0.5)
+    if mask_url:
+        # Emit mask immediately since we know it exists
         socketio.emit('mask_generated', {'maskUrl': mask_url}, to=target_screen_id)
-        
-    thread = threading.Thread(target=send_mask_later)
-    thread.start()
 
     return jsonify({"status": "success"})
-
-
 # Route to serve images
 @app.route('/static/uploads/<filename>')
 def serve_uploads(filename):
@@ -395,7 +396,7 @@ def send_email_with_image():
 
         # 2. Create Email
         msg = Message("النساجون الشرقيون : سجادتك في غرفتك", recipients=[user_email])
-        msg.body = "إليك شكل السجادة في غرفتك ز استمتع !"
+        msg.body = "إليك شكل السجادة في غرفتك . استمتع !"
         
         # 3. Attach Image
         msg.attach("design.png", "image/png", image_bytes)

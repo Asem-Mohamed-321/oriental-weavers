@@ -351,28 +351,53 @@ export default function StoreApp() {
       setAiPending(false);
   };
 
-const handlePrototypeSelect = async (room) => {
-    // LOG 1: Verify the click is working
-    console.log("👉 CLICKED ROOM:", room.id, "| Filename:", room.filename);
-    
-    // Optional: Force a loading state immediately so you know it registered
-    // setAiPending(true); 
+// StoreApp.jsx
 
-    try {
-        await fetch("http://localhost:5000/select-prototype", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                filename: room.filename,
-                mask_filename: room.mask_filename,
-                screenId: socket.id 
-            })
-        });
-        console.log("✅ Request sent to backend");
-    } catch (err) {
-        console.error("❌ Selection request failed:", err);
-        setAiPending(false);
-    }
+  const handlePrototypeSelect = (room) => {
+      console.log("👉 CLICKED PROTOTYPE:", room.id);
+      
+      // 1. Reset State
+      setStep("setup");
+      setMaskImgObj(null);
+      setPoints([]);
+      setAiPending(false);
+
+      // 2. Load Image Directly (Instant Switch)
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = room.image; // Use the URL we already have
+      
+      img.onload = () => {
+          const maxW = window.innerWidth * 0.9;
+          const ratio = img.height / img.width;
+          const w = Math.min(img.width, maxW);
+          const h = w * ratio;
+          setDimensions({ w, h });
+          setRoomImgObj(img);
+
+          // 3. Set Points (Corners)
+          if (room.corners && room.corners.length === 4) {
+              const fixedPoints = room.corners.map(p => ({ x: p[0] * w, y: p[1] * h }));
+              setPoints(fixedPoints);
+              setStep("placing"); // Skip setup for prototypes
+          } else {
+              // Fallback if no corners defined (shouldn't happen for prototypes)
+              const topY = h * 0.65;
+              const bottomY = h * 0.90; 
+              setPoints([{ x: w * 0.25, y: topY }, { x: w * 0.75, y: topY }, { x: w, y: bottomY }, { x: 0, y: bottomY }]);
+          }
+
+          // 4. Set Mask Immediately
+          if (room.mask) {
+              const mask = new Image();
+              mask.crossOrigin = "anonymous";
+              mask.src = room.mask;
+              mask.onload = () => setMaskImgObj(mask);
+          }
+      };
+
+      // NOTE: We do NOT call fetch('/select-prototype') here anymore.
+      // This prevents the network delay and the "wrong mask" race condition.
   };
   const handleUserRoomSelect = (room) => {
       console.log("Restoring User Room:", room.id);
@@ -440,12 +465,12 @@ const handlePrototypeSelect = async (room) => {
         
         const canvas = await html2canvas(containerRef.current, {
             useCORS: true, // Important for loading external images
-            scale: 2,      // Higher quality
+            scale: 1,
             backgroundColor: null
         });
 
         // 2. Convert to Base64
-        const base64Image = canvas.toDataURL("image/png");
+        const base64Image = canvas.toDataURL("image/jpeg");
 
         // 3. Send to Backend
         const response = await fetch("http://localhost:5000/send-email", {
